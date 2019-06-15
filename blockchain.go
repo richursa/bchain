@@ -8,6 +8,7 @@ import (
 	"time"
 )
 
+// Block : the basic data structure of a blockchain
 type Block struct {
 	Time  int64  // to store unix time
 	Data  string // transactions/data which is to be stored in a block
@@ -33,20 +34,25 @@ func computeHashWithProofOfWork(data string, difficulty string) (int64, string) 
 		hash := calcHash(intToStr(nonce) + data)
 		if strings.HasPrefix(hash, difficulty) {
 			return nonce, hash
-		} else {
-			nonce++
 		}
+		nonce++
 	}
 }
+
+// NewBlock : returns a new block with the hash of required difficulty
 func NewBlock(data string, prev string) Block {
 	t := time.Now().Unix()
 	difficulty := "000000"
 	nonce, hash := computeHashWithProofOfWork(intToStr(t)+prev+data, difficulty)
 	return Block{t, data, prev, hash, nonce}
 }
+
+// BlockToString : converts the block to a string with values separeted by a coma
 func (b Block) BlockToString() string {
 	return strconv.FormatInt(b.Time, 10) + "," + b.Data + "," + b.Hash + "," + b.Prev + "," + strconv.FormatInt(b.Nonce, 10)
 }
+
+// stringToBlock : converts a string, with values separeted by coma to Block
 func stringToBlock(s string) (Block, error) {
 	splittedBlock := strings.Split(s, ",")
 	Time, err := strconv.ParseInt(splittedBlock[0], 10, 64)
