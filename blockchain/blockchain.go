@@ -92,5 +92,5 @@ func (b blockchain) requestLatestBlock(peerlist []string) {
 			}()
 		}
 	}()
-	//todo
+	select {}
 }
