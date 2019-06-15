@@ -3,6 +3,8 @@ package blockchain
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"fmt"
+	"net"
 	"strconv"
 	"strings"
 	"time"
@@ -64,4 +66,31 @@ func stringToBlock(s string) (Block, error) {
 		return Block{}, err
 	}
 	return Block{Time, splittedBlock[1], splittedBlock[2], splittedBlock[3], Nonce}, nil
+}
+
+type blockchain []Block
+
+func (b blockchain) requestLatestBlock(peerlist []string) {
+	length := len(b)
+	c := make(chan string)
+	go func() {
+		for _, peer := range peerlist {
+			go func() {
+				conn, err := net.Dial("tcp", peer+":8888")
+				if err != nil {
+					fmt.Println(err)
+					return
+				}
+				data := []byte("requestLatestBlock" + "," + intToStr(int64(length)))
+				conn.Write(data)
+				_, err = conn.Read(data)
+				if err != nil {
+					fmt.Println(err)
+					return
+				}
+				c <- string(data)
+			}()
+		}
+	}()
+	//todo
 }
