@@ -3,18 +3,17 @@ package main
 import (
 	"crypto/sha256"
 	"encoding/hex"
-	"fmt"
 	"strconv"
 	"strings"
 	"time"
 )
 
 type Block struct {
-	Time  int64
-	Data  string
-	Prev  string
-	Hash  string
-	Nonce int64
+	Time  int64  // to store unix time
+	Data  string // transactions/data which is to be stored in a block
+	Prev  string //	hash of the previous block
+	Hash  string // hash of the current block
+	Nonce int64  // the nonce which is added to block header to produce a valid hash
 }
 
 func binaryToString(bytes []byte) string {
@@ -45,16 +44,18 @@ func NewBlock(data string, prev string) Block {
 	nonce, hash := computeHashWithProofOfWork(intToStr(t)+prev+data, difficulty)
 	return Block{t, data, prev, hash, nonce}
 }
-func stringToBlock(s string) Block {
-
+func (b Block) BlockToString() string {
+	return strconv.FormatInt(b.Time, 10) + "," + b.Data + "," + b.Hash + "," + b.Prev + "," + strconv.FormatInt(b.Nonce, 10)
 }
-func main() {
-	b0 := NewBlock("Hello Crypto World Here is my first coin", "0000000000000000000000000000000000000000000000000000000000000000")
-	b1 := NewBlock("Hello Cryptos ", b0.Hash)
-	fmt.Println(b0)
-	fmt.Println(b1)
-	fmt.Println("\n\nBlockchian\n\n")
-	blockChain := []Block{b0, b1}
-	blockChain = append(blockChain, NewBlock("sukhamnu doode", b1.Hash))
-	fmt.Println(blockChain)
+func stringToBlock(s string) (Block, error) {
+	splittedBlock := strings.Split(s, ",")
+	Time, err := strconv.ParseInt(splittedBlock[0], 10, 64)
+	if err != nil {
+		return Block{}, err
+	}
+	Nonce, err := strconv.ParseInt(splittedBlock[4], 10, 64)
+	if err != nil {
+		return Block{}, err
+	}
+	return Block{Time, splittedBlock[1], splittedBlock[2], splittedBlock[3], Nonce}, nil
 }
