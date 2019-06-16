@@ -73,7 +73,7 @@ func StringToBlock(s string) (Block, error) {
 type Blockchain []Block
 
 // RequestLatestBlock : request a new block from a list of peers
-func (b Blockchain) RequestLatestBlock(peerlist []string) {
+func (b Blockchain) RequestLatestBlock(peerlist []string) Block {
 	length := len(b)
 	c := make(chan string)
 	go func() {
@@ -104,9 +104,7 @@ func (b Blockchain) RequestLatestBlock(peerlist []string) {
 			if err != nil {
 				fmt.Println(err)
 			}
-			fmt.Println("appending")
-			b = append(b, latestBlock)
-			fmt.Println(b)
+			return latestBlock
 		}
 	}
 	// TO-DO :: implement default and timeout
