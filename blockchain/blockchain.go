@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"io/ioutil"
 	"net"
 	"strconv"
 	"strings"
@@ -44,18 +45,18 @@ func computeHashWithProofOfWork(data string, difficulty string) (int64, string) 
 // NewBlock : returns a new block with the hash of required difficulty
 func NewBlock(data string, prev string) Block {
 	t := time.Now().Unix()
-	difficulty := "000000"
+	difficulty := "00000"
 	nonce, hash := computeHashWithProofOfWork(intToStr(t)+prev+data, difficulty)
 	return Block{t, data, prev, hash, nonce}
 }
 
 // BlockToString : converts the block to a string with values separeted by a coma
-func (b Block) BlockToString() string {
+func (b Block) blockToString() string {
 	return strconv.FormatInt(b.Time, 10) + "," + b.Data + "," + b.Hash + "," + b.Prev + "," + strconv.FormatInt(b.Nonce, 10)
 }
 
-// stringToBlock : converts a string, with values separeted by coma to Block
-func stringToBlock(s string) (Block, error) {
+// StringToBlock : converts a string, with values separeted by coma to Block
+func StringToBlock(s string) (Block, error) {
 	splittedBlock := strings.Split(s, ",")
 	Time, err := strconv.ParseInt(splittedBlock[0], 10, 64)
 	if err != nil {
@@ -68,9 +69,11 @@ func stringToBlock(s string) (Block, error) {
 	return Block{Time, splittedBlock[1], splittedBlock[2], splittedBlock[3], Nonce}, nil
 }
 
-type blockchain []Block
+// Blockchain :  a slice of blocks
+type Blockchain []Block
 
-func (b blockchain) requestLatestBlock(peerlist []string) {
+// RequestLatestBlock : request a new block from a list of peers
+func (b Blockchain) RequestLatestBlock(peerlist []string) {
 	length := len(b)
 	c := make(chan string)
 	go func() {
@@ -81,9 +84,11 @@ func (b blockchain) requestLatestBlock(peerlist []string) {
 					fmt.Println(err)
 					return
 				}
-				data := []byte("requestLatestBlock" + "," + intToStr(int64(length)))
+				data := make([]byte, 100000)
+				data = []byte("requestLatestBlock" + "," + intToStr(int64(length)))
 				conn.Write(data)
-				_, err = conn.Read(data)
+				data, err = ioutil.ReadAll(conn)
+				fmt.Println("received data = ", string(data))
 				if err != nil {
 					fmt.Println(err)
 					return
@@ -92,5 +97,46 @@ func (b blockchain) requestLatestBlock(peerlist []string) {
 			}()
 		}
 	}()
-	select {}
+	select {
+	case recievedBlock := <-c:
+		{
+			latestBlock, err := StringToBlock(recievedBlock)
+			if err != nil {
+				fmt.Println(err)
+			}
+			fmt.Println("appending")
+			b = append(b, latestBlock)
+			fmt.Println(b)
+		}
+	}
+	// TO-DO :: implement default and timeout
+}
+func (b Blockchain) ServeBlock() {
+	ln, err := net.Listen("tcp", "localhost:8888")
+	if err != nil {
+		fmt.Println(err)
+	}
+	for {
+		conn, err := ln.Accept()
+		if err != nil {
+			fmt.Println(err)
+		}
+		go func() {
+			tmp := make([]byte, 10000)
+			conn.Read(tmp)
+			blockID, err := strconv.ParseInt(strings.Split(string(tmp), ",")[1], 10, 64)
+			fmt.Println("blockid =", blockID)
+			if err != nil {
+				//fmt.Println(err)
+			}
+			if (int64(len(b))) >= blockID {
+				s := b[blockID].blockToString()
+				conn.Write([]byte(s))
+				conn.Close()
+			} else {
+				conn.Close()
+			}
+		}()
+	}
+
 }
