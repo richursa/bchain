@@ -7,7 +7,9 @@ import (
 )
 
 func main() {
+	// initialise peers
 	peerlist := []string{"localhost"}
+	//declare mychain as a slice of blocks
 	var mychain blockchain.Blockchain
 	fmt.Println("current blockchain is ", mychain)
 	fmt.Println("requesting blocks from peers")
